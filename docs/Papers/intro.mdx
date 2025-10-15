@@ -1,0 +1,169 @@
+---
+hide_table_of_contents: true
+---
+# Papers
+import React, { useEffect, useState } from 'react';
+import Papa from 'papaparse';
+
+export const PaperGrid = () => {
+  const [papers, setPapers] = useState([]);
+  const [sortKey, setSortKey] = useState('');
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    Papa.parse('/files/works-2025-10-15T01-25-09.csv', {
+      header: true,
+      download: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        setPapers(results.data);
+      },
+    });
+  }, []);
+
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortOrder('asc');
+    }
+  };
+
+  const filteredPapers = papers.filter((paper) => {
+    const title = paper.title?.toLowerCase() || '';
+    const authors = paper["authorships.author.display_name"]?.toLowerCase() || '';
+    const journal = paper["primary_location.source.display_name"]?.toLowerCase() || '';
+    const q = search.toLowerCase();
+    return title.includes(q) || authors.includes(q) || journal.includes(q);
+  });
+
+  const sortedPapers = [...filteredPapers].sort((a, b) => {
+    if (!sortKey) return 0;
+    let valA = a[sortKey] || '';
+    let valB = b[sortKey] || '';
+    if (sortKey === 'publication_year' || sortKey === 'cited_by_count') {
+      valA = parseInt(valA) || 0;
+      valB = parseInt(valB) || 0;
+    } else {
+      valA = valA.toString().toLowerCase();
+      valB = valB.toString().toLowerCase();
+    }
+    if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+    if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  if (!papers.length) return <div>Loading...</div>;
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+        <input
+          type="text"
+          placeholder="Search title, author, or journal..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ padding: '0.5rem 1rem', fontSize: '1rem', flex: '1 1 200px', minWidth: 200 }}
+        />
+        <label style={{ fontWeight: 500 }}>
+          Sort by:
+          <select value={sortKey} onChange={e => handleSort(e.target.value)} style={{ marginLeft: '0.5rem', padding: '0.5rem' }}>
+            <option value="">None</option>
+            <option value="title">Title</option>
+            <option value="publication_year">Year</option>
+            <option value="type">Type</option>
+            <option value="cited_by_count">Cited By</option>
+          </select>
+        </label>
+        {sortKey && (
+          <button onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')} style={{ padding: '0.5rem 1rem' }}>
+            {sortOrder === 'asc' ? '▲' : '▼'}
+          </button>
+        )}
+      </div>
+      <div className="paper-grid">
+        {sortedPapers.map((paper, idx) => (
+          <div className="paper-card" key={idx}>
+            <h3 style={{ marginBottom: '0.5rem' }} dangerouslySetInnerHTML={{ __html: paper.title }} />
+            <div style={{ marginBottom: '0.5rem' }}>
+              <span style={{ position: 'relative', cursor: 'pointer' }}>
+                <span role="img" aria-label="authors">👥</span>
+                <span
+                  style={{
+                    visibility: 'hidden',
+                    background: '#333',
+                    color: '#fff',
+                    borderRadius: 4,
+                    padding: '6px 12px',
+                    position: 'absolute',
+                    zIndex: 10,
+                    left: '24px',
+                    top: '-8px',
+                    whiteSpace: 'pre-line',
+                  }}
+                  className="author-tooltip"
+                >
+                  {paper["authorships.author.display_name"]
+                    ? paper["authorships.author.display_name"].split('|').join(', ')
+                    : 'N/A'}
+                </span>
+              </span>
+            </div>
+            <div><strong>Year:</strong> {paper.publication_year}</div>
+            <div><strong>Type:</strong> {paper.type}</div>
+            <div><strong>Cited By:</strong> {paper.cited_by_count}</div>
+            <div><strong>Journal:</strong> {paper["primary_location.source.display_name"] || 'N/A'}</div>
+            <div>
+              <strong>DOI:</strong>{' '}
+              {paper.doi ? (
+                <a href={`https://doi.org/${paper.doi}`} target="_blank" rel="noopener noreferrer">
+                  {paper.doi}
+                </a>
+              ) : (
+                'N/A'
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+
+
+This is the list of all publications by Cairns Lab members.
+
+<PaperGrid />
+
+<style>{`
+.author-tooltip {
+  transition: visibility 0.2s;
+  min-width: 350px;
+  max-width: 350px;
+  font-size: 0.8rem;
+  padding: 12px 18px;
+}
+span[role="img"]:hover + .author-tooltip {
+  visibility: visible !important;
+}
+.paper-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+}
+.paper-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 1.5rem;
+  margin: 0;
+  border-radius: 0;
+}
+[data-theme='dark'] .paper-card {
+  background: #181a1b;
+  border-color: #333;
+}
+`}</style>
