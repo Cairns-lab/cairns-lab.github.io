@@ -29,13 +29,13 @@ This command generates static content into the `build` directory and can be serv
 
 ### Deployment
 
-Using SSH:
+- **Using SSH:**
 
 ```bash
 USE_SSH=true yarn deploy
 ```
 
-Not using SSH:
+- **Not using SSH:**
 
 >[!NOTE]
 > I think that's the better way
