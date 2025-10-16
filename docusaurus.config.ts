@@ -9,6 +9,7 @@ const config: Config = {
   tagline: 'The Centre for Complex Disease and Precision Medicine',
   favicon: 'img/CL_logo.png',
 
+  // So it does not replace the main branch when pushed
   deploymentBranch: 'gh-pages',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
